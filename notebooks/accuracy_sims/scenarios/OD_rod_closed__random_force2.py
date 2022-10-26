@@ -538,7 +538,6 @@ start_order = 4
 end_order = 5
 reference_dt = 1e-6
 dt_prefs = np.array([1,2])
-dt_prefs = np.array([1, 1.25, 2, 2.5, 5])
 
 ref_integrator = 'integrator_OD_SE3'
 
@@ -555,6 +554,22 @@ start_order = 3
 end_order = 6
 reference_dt = 1e-7
 dt_prefs = np.array([1, 1.25, 2, 2.5, 5])
+
+ref_integrator = 'integrator_OD_SE3'
+
+integrators = [
+    'integrator_OD_FE',
+    'integrator_OD_SO3',
+    'integrator_OD_SE3'
+]
+
+# +
+# Params
+
+start_order = 4
+end_order = 5
+reference_dt = 1e-5
+dt_prefs = np.array([1,2])
 
 ref_integrator = 'integrator_OD_SE3'
 

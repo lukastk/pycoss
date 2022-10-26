@@ -383,22 +383,9 @@ integrators = [
     'integrator_KE_SO3',
     'integrator_KE_SE3'
 ]
+# -
 
-# +
-# Params
 
-start_order = 3
-end_order = 4
-reference_dt = 1e-5
-dt_prefs = np.array([1, 2])
-
-ref_integrator = 'integrator_KE_SE3'
-
-integrators = [
-    'integrator_KE_FE',
-    'integrator_KE_SO3',
-    'integrator_KE_SE3'
-]
 
 # +
 backend_ =  mpl.get_backend() 
