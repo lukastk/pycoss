@@ -66,7 +66,7 @@ def run_sim(run_name, dt, integrator):
 
     # Simulation parameters
 
-    T = 0.1
+    T = 20
     taylor_tol = 1e-2
 
     # Misc
