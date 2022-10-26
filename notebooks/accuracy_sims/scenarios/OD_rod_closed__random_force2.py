@@ -562,22 +562,6 @@ integrators = [
     'integrator_OD_SO3',
     'integrator_OD_SE3'
 ]
-
-# +
-# Params
-
-start_order = 4
-end_order = 5
-reference_dt = 1e-5
-dt_prefs = np.array([1,2])
-
-ref_integrator = 'integrator_OD_SE3'
-
-integrators = [
-    'integrator_OD_FE',
-    'integrator_OD_SO3',
-    'integrator_OD_SE3'
-]
 # -
 
 #divisors_1000 = np.array([1, 2, 4, 5, 8, 10, 20, 25, 40, 50, 100, 125, 200, 250, 500, 1000])
