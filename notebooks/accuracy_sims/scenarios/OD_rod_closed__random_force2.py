@@ -66,7 +66,7 @@ def run_sim(run_name, dt, integrator):
 
     # Simulation parameters
 
-    T = 20
+    T = 10
     taylor_tol = 1e-2
 
     # Misc
@@ -555,7 +555,7 @@ end_order = 6
 reference_dt = 1e-7
 dt_prefs = np.array([1, 1.25, 2, 2.5, 5])
 
-ref_integrator = 'integrator_OD_SE3'
+ref_integrator = 'integrator_OD_SO3'
 
 integrators = [
     'integrator_OD_FE',
