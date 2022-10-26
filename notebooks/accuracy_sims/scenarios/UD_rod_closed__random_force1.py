@@ -549,10 +549,9 @@ integrators = [
 # Params
 
 start_order = 4
-end_order = 6
-reference_dt = 1e-7
+end_order = 5
+reference_dt = 1e-6
 dt_prefs = np.array([1, 2])
-dt_prefs = np.array([1, 1.25, 2, 2.5, 5])
 
 ref_integrator = 'integrator_UD_SE3'
 
@@ -566,9 +565,10 @@ integrators = [
 # Params
 
 start_order = 4
-end_order = 5
-reference_dt = 1e-6
+end_order = 6
+reference_dt = 1e-7
 dt_prefs = np.array([1, 2])
+dt_prefs = np.array([1, 1.25, 2, 2.5, 5])
 
 ref_integrator = 'integrator_UD_SE3'
 
@@ -637,7 +637,7 @@ for integrator in integrators:
             dts_sim_res[integrator].append(None)
             dts_stats[integrator].append(None)
             
-mpl.use('module://matplotlib_inline.backend_inline')
+#mpl.use('module://matplotlib_inline.backend_inline')
 # -
 
 # # Save results

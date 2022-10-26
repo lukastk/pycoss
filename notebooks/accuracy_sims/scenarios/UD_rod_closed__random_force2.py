@@ -40,7 +40,6 @@ warnings.filterwarnings(action="error", category=np.ComplexWarning)
 
 
 def run_sim(run_name, dt, integrator):
-    # ## Parameters
 
     # +
     L0 = 1
@@ -54,7 +53,7 @@ def run_sim(run_name, dt, integrator):
 
     # Generate curve
 
-    random_seed = 3323
+    random_seed = 1232
     frame_rot_ampl = 3
     N_random_curve_modes = 3
     mu_random_curve = 0
@@ -63,6 +62,7 @@ def run_sim(run_name, dt, integrator):
     # System parameters
 
     lmbd = 1
+    alpha = 1
 
     # Simulation parameters
 
@@ -75,7 +75,6 @@ def run_sim(run_name, dt, integrator):
     N_clock = 100
     N_integrator_trials = int(1e4)
     # -
-
 
 
     # ## Initial conditions
@@ -119,6 +118,14 @@ def run_sim(run_name, dt, integrator):
     cn_Eps /= np.max(np.linalg.eigvals(cn_Eps))
 
     cn_Eps *= 1e-3
+
+    mI = np.random.random((3,3))
+
+    mI = mI + mI.T
+    mI += np.eye(3) * 3
+    mI /= np.max(np.linalg.eigvals(mI))
+
+    mI *= 1
 
 
     # +
@@ -255,6 +262,20 @@ def run_sim(run_name, dt, integrator):
     def compute_U(us, th, pi):
         return compute_U_T(us, th, pi) + compute_U_R(us, th, pi)
 
+    def compute_K_T(us, V, Omg, mI):
+        K_T = V[0]**2 + V[1]**2 + V[2]**2
+        K_T = np.trapz(K_T, us)*0.5
+        return K_T
+
+    def compute_K_R(us, V, Omg, mI):
+        L = np.einsum('ij,ju', mI, Omg)
+        K_R = vec_vec_dot(L, Omg)
+        K_R = np.trapz(K_R, us)*0.5
+        return K_R
+
+    def compute_K(us, h, V, Omg, mI):
+        return compute_K_T(us, V, Omg, mI) + compute_K_R(us, V, Omg, mI)
+
 
     # +
     U0 = compute_U(path_handler.grid_ext,
@@ -279,7 +300,9 @@ def run_sim(run_name, dt, integrator):
         'dt' : dt,
         'taylor_tol' : taylor_tol,
 
+        'alpha' : alpha,
         'lmbd' : lmbd,
+        'mI' : mI,
 
         'path_handler' : path_handler,
         'path_handler_render' : path_handler_render,
@@ -293,17 +316,17 @@ def run_sim(run_name, dt, integrator):
 
         'U_T' : compute_U_T,
         'U_R' : compute_U_R,
+        'K_T' : compute_K_T,
+        'K_R' : compute_K_R,
 
-        'N_save' : N_save,
+        'N_save' : 100,
         'Mm_save' : Mm_save,
 
-        'N_clock' : N_clock,
-
-        'save_ts' : False,
+        'N_clock' : 100,
     }
 
     params['integrator'] = globals()[integrator]
-    sim_res = rod.sim.OD_simulate(params)
+    sim_res = rod.sim.UD_simulate(params)
 
     # ## Saving results
 
@@ -326,6 +349,8 @@ def run_sim(run_name, dt, integrator):
     del _params['M']
     del _params['U_T']
     del _params['U_R']
+    del _params['K_T']
+    del _params['K_R']
     _params['integrator'] = integrator
 
     pickle.dump(_params, open(Path( data_path, 'params.pkl' ), 'wb'))
@@ -336,14 +361,18 @@ def run_sim(run_name, dt, integrator):
     # +
     c_th = sim_res['c_th']
     c_pi = sim_res['c_pi']
+    c_V = sim_res['c_V']
+    c_Omg = sim_res['c_Omg']
+    imI = np.linalg.inv(mI)
+
     t = 0
     dt = params['dt']
     lmbd = params['lmbd']
     taylor_tol = params['taylor_tol']
 
     func = globals()[integrator]
-    lfunc = lambda: func(c_th, c_pi, t, dt, compute_F, compute_M, path_handler,
-                     lmbd, taylor_tol, pre_transform=None, post_transform=None)
+    lfunc = lambda: func(c_th, c_pi, c_V, c_Omg, t, dt, compute_F, compute_M, path_handler,
+                     alpha, mI, imI, lmbd, taylor_tol, pre_transform=None, post_transform=None)
     integrator_time_single_step = timeit.timeit(lfunc, number=N_integrator_trials)/N_integrator_trials
     integrator_time = integrator_time_single_step * sim_res['Nt']
     integrator_time /= 60**2
@@ -385,12 +414,14 @@ def run_sim(run_name, dt, integrator):
     ax.plot(ts, sim_res['U'], label='U')
     ax.plot(ts, sim_res['U_T'], label='U_T')
     ax.plot(ts, sim_res['U_R'], label='U_R')
+    ax.plot(ts, sim_res['K_T'], label='K_T')
+    ax.plot(ts, sim_res['K_R'], label='K_R')
+    ax.plot(ts, sim_res['K'], label='K')
     ax.set_yscale('log')
 
     plt.legend()
 
     fig.savefig(Path( figs_path, 'U.png' ))
-    plt.close()
     # -
 
     fig, ax = plotting.plot_centerline_2D(sim_res['saved_R'][0])
@@ -482,20 +513,20 @@ def run_sim(run_name, dt, integrator):
     #plt.show()
     plt.close()
 
-
+    
     return params, sim_res, stats
 
 # +
-sim_name = 'OD_rod_closed'
-scenario_name = 'random_force1'
+sim_name = 'UD_rod_closed'
+scenario_name = 'random_force2'
 
 output_folder = '../output'
 # -
 
 integrator_to_label = {
-    'integrator_OD_FE' : 'FE',
-    'integrator_OD_SO3' : 'SO3',
-    'integrator_OD_SE3' : 'SE3'
+    'integrator_UD_FE' : 'FE',
+    'integrator_UD_SO3' : 'SO3',
+    'integrator_UD_SE3' : 'SE3'
 }
 
 # +
@@ -506,12 +537,28 @@ end_order = 6
 reference_dt = 1e-7
 dt_prefs = np.array([1, 2, 5])
 
-ref_integrator = 'integrator_OD_SE3'
+ref_integrator = 'integrator_UD_SE3'
 
 integrators = [
-    'integrator_OD_FE',
-    'integrator_OD_SO3',
-    'integrator_OD_SE3'
+    'integrator_UD_FE',
+    'integrator_UD_SO3',
+    'integrator_UD_SE3'
+]
+
+# +
+# Params
+
+start_order = 4
+end_order = 5
+reference_dt = 1e-6
+dt_prefs = np.array([1, 2])
+
+ref_integrator = 'integrator_UD_SE3'
+
+integrators = [
+    'integrator_UD_FE',
+    'integrator_UD_SO3',
+    'integrator_UD_SE3'
 ]
 
 # +
@@ -523,67 +570,13 @@ reference_dt = 1e-7
 dt_prefs = np.array([1, 2])
 dt_prefs = np.array([1, 1.25, 2, 2.5, 5])
 
-ref_integrator = 'integrator_OD_SE3'
+ref_integrator = 'integrator_UD_SE3'
 
 integrators = [
-    'integrator_OD_FE',
-    'integrator_OD_SO3',
-    'integrator_OD_SE3'
+    'integrator_UD_FE',
+    'integrator_UD_SO3',
+    'integrator_UD_SE3'
 ]
-
-# +
-# Params
-
-start_order = 4
-end_order = 5
-reference_dt = 1e-6
-dt_prefs = np.array([1,2])
-dt_prefs = np.array([1, 1.25, 2, 2.5, 5])
-
-ref_integrator = 'integrator_OD_SE3'
-
-integrators = [
-    'integrator_OD_FE',
-    'integrator_OD_SO3',
-    'integrator_OD_SE3'
-]
-
-# +
-# Params
-
-start_order = 3
-end_order = 6
-reference_dt = 1e-7
-dt_prefs = np.array([1, 1.25, 2, 2.5, 5])
-
-ref_integrator = 'integrator_OD_SE3'
-
-integrators = [
-    'integrator_OD_FE',
-    'integrator_OD_SO3',
-    'integrator_OD_SE3'
-]
-# -
-
-#divisors_1000 = np.array([1, 2, 4, 5, 8, 10, 20, 25, 40, 50, 100, 125, 200, 250, 500, 1000])
-#dt_prefs = np.array([1, 1.25, 2, 2.5, 5])
-dts = []
-for i in range(start_order, end_order+1):
-    for p in dt_prefs:
-        dts.append(10**(-i) * p)
-dts = np.array(dts)
-dts = np.sort(dts)[::-1]
-
-# +
-int_single_step = 0.0005721170749999998
-sim_T = 10
-est_sim_time = 0
-
-for dt in dts:
-    est_sim_time += 3 * (sim_T / dt) * int_single_step
-# -
-
-est_sim_time / (60*60)
 
 # +
 backend_ =  mpl.get_backend() 
@@ -668,6 +661,9 @@ for integrator in dts_sim_res.keys():
             print('%s has wrong saved_ts' % dt)
             with open(Path(data_path, 'errors.txt'), 'a') as f:
                 f.write('%s has wrong saved_ts' % dt)
+# -
+
+dts_sim_res.keys()
 
 # +
 all_closed_errs = {}
@@ -675,9 +671,6 @@ all_Rf_sup_err = {}
 all_Ef_sup_err = {}
 all_Phif_sup_err = {}
 all_saved_dts = {}
-
-ref_Rf = ref_sim_res['Rf']
-ref_Ef = ref_sim_res['Ef']
 
 for ig in dts_sim_res:
     all_closed_errs[ig] = {}
@@ -693,53 +686,12 @@ for ig in dts_sim_res:
             all_closed_errs[ig][dt] = sim_res['saved_close_errs']
             all_saved_dts[dt] = sim_res['saved_ts']
             
-            all_Rf_sup_err[ig][dt] = np.array([ np.max(np.abs(ref_Rf - sim_res['saved_R'][i,:,:])) for i in range(sim_res['saved_R'].shape[0]) ])
-            all_Ef_sup_err[ig][dt] = np.array([ np.max(np.abs(ref_Ef - sim_res['saved_E'][i,:,:])) for i in range(sim_res['saved_E'].shape[0]) ])
-            all_Phif_sup_err[ig][dt] = np.array([max(r1, r2) for r1,r2 in zip(all_Rf_sup_err[ig][dt], all_Ef_sup_err[ig][dt])])
+            all_Rf_sup_err[ig][dt] = [ np.max(np.abs(ref_sim_res['saved_R'][i,:,:] - sim_res['saved_R'][i,:,:])) for i in range(sim_res['saved_R'].shape[0]) ]
+            all_Ef_sup_err[ig][dt] = [ np.max(np.abs(ref_sim_res['saved_E'][i,:,:] - sim_res['saved_E'][i,:,:])) for i in range(sim_res['saved_E'].shape[0]) ]
+            all_Phif_sup_err[ig][dt] = [max(r1, r2) for r1,r2 in zip(all_Rf_sup_err[ig][dt], all_Ef_sup_err[ig][dt])]
 # -
 
 # ## Figures
-
-# +
-Rf_sup_errs__v__dt = {}
-Rf_sup_errs__v__dt['dt'] = dts
-
-ref_Rf = ref_sim_res['Rf']
-
-for igf in dts_sim_res.keys():
-    ig = integrator_to_label[igf]
-    Rf_sup_errs__v__dt[ig] = []
-    
-    for dt, sim_res in zip(dts, dts_sim_res[igf]):
-        if sim_res is None:
-            Rf_sup_errs__v__dt[ig].append(np.nan)
-        else:
-            Rf = sim_res['Rf']
-            err = np.max(np.abs(ref_Rf - Rf)) 
-            Rf_sup_errs__v__dt[ig].append(err)
-
-df = pd.DataFrame(Rf_sup_errs__v__dt)
-df.to_csv(Path(data_path, 'Rf_sup_errs__v__dt.csv'))
-
-df.head()
-
-# +
-fig, ax = plt.subplots()
-
-ax.set_xlabel(r'$\Delta t$')
-ax.set_ylabel('Rf_sup_err')
-
-ax.set_xscale('log')
-ax.set_yscale('log')
-
-for ig in integrators:
-    ax.plot(Rf_sup_errs__v__dt['dt'], Rf_sup_errs__v__dt[integrator_to_label[ig]], label=integrator_to_label[ig])
-    
-ax.legend()
-plt.show()
-fig.savefig(Path(data_path, 'figs', 'Rf_sup_errs__v__dt.pdf'),bbox_inches='tight')
-plt.tight_layout()
-# -
 
 # #### `Rf_sup_errs__v__dt`
 
@@ -1056,5 +1008,11 @@ plt.show()
 fig.savefig(Path(data_path, 'figs', 'close_error__v__integrator_time.pdf'),bbox_inches='tight')
 plt.tight_layout()
 # -
+
+
+
+
+
+
 
 

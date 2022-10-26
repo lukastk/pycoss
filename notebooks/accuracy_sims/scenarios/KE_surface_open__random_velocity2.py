@@ -57,7 +57,7 @@ def run_sim(run_name, dt, integrator):
     Mmu_save = Nmu*2
     Mmv_save = Nmv*2
 
-    random_seed = 332325
+    random_seed = 33990
 
     # Simulation parameters
 
@@ -324,7 +324,7 @@ plt.close(fig)
 
 # +
 sim_name = 'KE_surface_open'
-scenario_name = 'random_velocity1'
+scenario_name = 'random_velocity2'
 
 output_folder = '../output'
 # -

@@ -54,7 +54,7 @@ def run_sim(run_name, dt, integrator):
 
     # Generate curve
 
-    random_seed = 3323
+    random_seed = 1232
     frame_rot_ampl = 3
     N_random_curve_modes = 3
     mu_random_curve = 0
@@ -487,7 +487,7 @@ def run_sim(run_name, dt, integrator):
 
 # +
 sim_name = 'OD_rod_closed'
-scenario_name = 'random_force1'
+scenario_name = 'random_force2'
 
 output_folder = '../output'
 # -
