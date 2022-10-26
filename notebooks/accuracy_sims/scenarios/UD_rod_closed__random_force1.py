@@ -76,13 +76,6 @@ def run_sim(run_name, dt, integrator):
     N_integrator_trials = int(1e4)
     # -
 
-    # Load arguments if running as a script
-    if sys.argv[1] == "args":
-        params_pkl_path = sys.argv[2]
-        args_params = pickle.load(open(params_pkl_path, 'rb'))
-
-        for param_k, param_v in args_params.items():
-            globals()[param_k] = param_v
 
     # ## Initial conditions
 
