@@ -189,20 +189,35 @@ def KE_simulate(params):
                 saved_piv[save_k] = piv0
 
 
-        ### Compute integrability error
+            ### Compute integrability error
 
-        piu_hat = hat_vec_to_mat(piu)
-        piv_hat = hat_vec_to_mat(piv)
+            piu_hat = hat_vec_to_mat(piu)
+            piv_hat = hat_vec_to_mat(piv)
 
-        Xu = construct_se3_elem(thu, piu_hat)
-        Xv = construct_se3_elem(thv, piv_hat)
+            Xu = construct_se3_elem(thu, piu_hat)
+            Xv = construct_se3_elem(thv, piv_hat)
 
-        dv_Xu = X_path_handler.diffv_f(Xu)
-        du_Xv = X_path_handler.diffu_f(Xv)
-        ad_Xu_Xv = np.einsum('ijuv,jkuv->ikuv', Xu, Xv) - np.einsum('ijuv,jkuv->ikuv', Xv, Xu)
+            dv_Xu = X_path_handler.diffv_f(Xu)
+            du_Xv = X_path_handler.diffu_f(Xv)
+            ad_Xu_Xv = np.einsum('ijuv,jkuv->ikuv', Xu, Xv) - np.einsum('ijuv,jkuv->ikuv', Xv, Xu)
 
-        integrability_err = np.max(np.abs((du_Xv + ad_Xu_Xv) - dv_Xu))
-        integrability_errs.append(integrability_err)
+            integrability_err = np.max(np.abs((du_Xv + ad_Xu_Xv) - dv_Xu))
+            integrability_errs.append(integrability_err)
+
+        if sim_n == 0:
+            ### Compute integrability error
+
+            piu_hat = hat_vec_to_mat(piu)
+            piv_hat = hat_vec_to_mat(piv)
+
+            Xu = construct_se3_elem(thu, piu_hat)
+            Xv = construct_se3_elem(thv, piv_hat)
+
+            dv_Xu = X_path_handler.diffv_f(Xu)
+            du_Xv = X_path_handler.diffu_f(Xv)
+            ad_Xu_Xv = np.einsum('ijuv,jkuv->ikuv', Xu, Xv) - np.einsum('ijuv,jkuv->ikuv', Xv, Xu)
+
+            integrability_err0 = np.max(np.abs((du_Xv + ad_Xu_Xv) - dv_Xu))
 
     R, E = reconstruct_surface(thu, thv, piu, piv, Fr_uv0, Mmu_render, Mmv_render, Mmu_save, Mmv_save, path_handler, pre_transform=pre_transform_render)
 
@@ -233,7 +248,8 @@ def KE_simulate(params):
         'sim_run_time' : sim_run_time,
         'sim_run_time2' : sim_run_time2,
 
-        'integrability_errs' : integrability_errs
+        'integrability_errs' : integrability_errs,
+        'integrability_err0' : integrability_err0
     }
 
     if N_save != -1:
