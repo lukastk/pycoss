@@ -116,6 +116,11 @@ def UD_simulate(params):
     if not pre_transform is None:
         th0, pi0, V0, Omg0 = pre_transform(th0, pi0, V0, Omg0)
 
+    if 'max_Nt' in params:
+        max_Nt = params['max_Nt']
+    else:
+        max_Nt = Nt
+
     U_Ts = np.zeros(Nt)
     U_Rs = np.zeros(Nt)
     Us = np.zeros(Nt)
@@ -187,7 +192,7 @@ def UD_simulate(params):
 
     # Simulate
 
-    for sim_n in range(1, Nt):
+    for sim_n in range(1, min(max_Nt, Nt)):
         if verbose and sim_n % N_print == 0:
             time_passed = time.time() - t1
             t1 = time.time()
