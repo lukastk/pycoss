@@ -147,7 +147,7 @@ def KE_simulate(params):
     X_path_handler = pycoss.surface.interp.cheb.ChebHandler((4,4), Nmu, Nmv, Lu0, Lv0, mpmath_dps=-1)
     integrability_errs = []
 
-    for sim_n in range(1, min(max_Nt, Nt)):
+    for sim_n in range(0, min(max_Nt, Nt)):
         if verbose and sim_n % N_print == 0:
             time_passed = time.time() - t1
             t1 = time.time()
